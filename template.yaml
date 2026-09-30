@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Jev decision step for an Amazon Bedrock agent — a Lambda action group that
+  POSTs the current state to jevtypesafeai.com/api/v1/decide and returns one
+  typed, calibrated decision. Guide: https://jevtypesafeai.com/jev-aws-bedrock
+
+Parameters:
+  JevApiKey:
+    Type: String
+    NoEcho: true
+    Description: Your Jev key from https://jevtypesafeai.com/pricing (jv_live_...).
+  JevUrl:
+    Type: String
+    Default: https://jevtypesafeai.com/api/v1/decide
+    Description: >
+      Jev decide endpoint. Leave the default to bill through the hosted gateway
+      with a jv_live_ key.
+
+Resources:
+  JevDecisionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: jev-decision
+      Runtime: python3.12
+      Handler: handler.lambda_handler
+      CodeUri: src/
+      Timeout: 30
+      MemorySize: 128
+      Environment:
+        Variables:
+          JEV_API_KEY: !Ref JevApiKey
+          JEV_URL: !Ref JevUrl
+
+  # Allow the Bedrock agents service to invoke this function as an action group.
+  BedrockInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt JevDecisionFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: bedrock.amazonaws.com
+      SourceAccount: !Ref AWS::AccountId
+
+Outputs:
+  FunctionArn:
+    Description: Use this ARN as the Lambda for your Bedrock agent action group.
+    Value: !GetAtt JevDecisionFunction.Arn

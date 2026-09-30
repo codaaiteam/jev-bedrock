@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: Jev Decision
+  version: 1.0.0
+  description: >
+    Return one typed decision — a choice, a score, or a yes/no probability —
+    with calibrated confidence, powered by Jev (TypeSafe AI) via
+    jevtypesafeai.com. Attach this schema to a Bedrock agent action group backed
+    by the jev-decision Lambda.
+paths:
+  /decide:
+    post:
+      operationId: decide
+      summary: Make a fast, typed decision about the current situation.
+      description: >
+        Send the current situation as plain text. Returns the chosen option(s)
+        from a fixed answer space defined by the tool, each with a calibrated
+        confidence from 0 to 1. Use it to route, classify, triage, or gate an
+        action — never to generate prose.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [state]
+              properties:
+                state:
+                  type: string
+                  description: >
+                    The situation to decide on, as plain text — e.g. the support
+                    ticket, the user's message, or the action being proposed.
+      responses:
+        "200":
+          description: One entry per question, each with a typed value and confidence.
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    value:
+                      description: >
+                        The chosen option (for a choice), the score (for a
+                        score), or the 0–1 probability (for a noul).
+                    confidence:
+                      type: number
+                      description: Calibrated confidence from 0 to 1.
